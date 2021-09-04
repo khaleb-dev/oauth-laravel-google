@@ -22,3 +22,4 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/auth/google', [App\Http\Controllers\HomeController::class, 'googleAuth'])->name('googleAuth');
 Route::get('/auth/google/callback', [App\Http\Controllers\HomeController::class, 'callback'])->name('callback');
+Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'dashboard'])->name('dashboard');

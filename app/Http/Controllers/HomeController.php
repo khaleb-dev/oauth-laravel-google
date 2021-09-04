@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Google\Service\Gmail\Profile;
-use Google\Service\Oauth2;
+use App\Models\User;
 use Google_Client;
-use Google_Service_Drive;
 use Google_Service_Oauth2;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class HomeController extends Controller
@@ -34,46 +32,64 @@ class HomeController extends Controller
 
     public function googleAuth()
     {
-
+        // google client instance
         $client = new Google_Client();
+        // set client token and id
         $file = Storage::path('public/client_secret.json');
         $client->setAuthConfig($file);
-//         $client->addScope(Oauth2::USERINFO_PROFILE, );
+        // scopes specifies google services of which the token should be used for.
         $client->addScope('email' );
         $client->addScope('profile' );
-//        $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . '/oauth2callback.php');
+        // set callback url (it must match the one provided in google client console)
         $client->setRedirectUri(''.env('APP_URL').'/auth/google/callback');
-// offline access will give you both an access and refresh token so that
-// your app can refresh the access token without user interaction.
+        // offline access will give you both an access and refresh token so that
+        // your app can refresh the access token without user interaction.
         $client->setAccessType('offline');
-// Using "consent" ensures that your application always receives a refresh token.
-// If you are not using offline access, you can omit this.
-//        $client->setApprovalPrompt('consent');
-        $client->setIncludeGrantedScopes(true);   // incremental auth
+        // Using "consent" ensures that your application always receives a refresh token.
+        // If you are not using offline access, you can omit this.
+        // $client->setApprovalPrompt('consent');
+        // incremental auth
+        $client->setIncludeGrantedScopes(false);
 
-        // create url
+        // build url
         $auth_url = $client->createAuthUrl();
-//        echo $auth_url;
-//        exit();
-//        header('Location: ' . filter_var($auth_url, FILTER_SANITIZE_URL));
 
         return redirect(filter_var($auth_url, FILTER_SANITIZE_URL));
     }
 
     public function callback()
     {
+        // google client instance
         $client = new Google_Client();
+        // set client token and id
         $file = Storage::path('public/client_secret.json');
         $client->setAuthConfig($file);
+        // scopes specifies google services of which the token should be used for.
         $client->addScope('email' );
         $client->addScope('profile' );
+        // trade code for access token
         $client->fetchAccessTokenWithAuthCode($_GET['code']);
+        // now get oauth data from google oauth service
         $service = new Google_Service_Oauth2($client);
         $user = $service->userinfo->get();
 
-        $save
+        // now you should have gotten the authenticated user data, you can now search ur database for the user account
+        if($finduser = User::where('google_id', $user->id)->first())
+        {
+            Auth::login($finduser);
+        }
+        else{
+            $newUser = User::create([
+                'name' => $user->name,
+                'email' => $user->email,
+                'google_id' => $user->id,
+                'password' => encrypt('app_passKey_google')
+            ]);
 
-
+            Auth::login($newUser);
+        }
+        // redirect to dashboard
+        return redirect('home');
     }
 
 }
