@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Google\Service\Gmail\Profile;
 use Google\Service\Oauth2;
 use Google_Client;
 use Google_Service_Drive;
+use Google_Service_Oauth2;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -36,7 +38,9 @@ class HomeController extends Controller
         $client = new Google_Client();
         $file = Storage::path('public/client_secret.json');
         $client->setAuthConfig($file);
-         $client->addScope(Oauth2::USERINFO_PROFILE, );
+//         $client->addScope(Oauth2::USERINFO_PROFILE, );
+        $client->addScope('email' );
+        $client->addScope('profile' );
 //        $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . '/oauth2callback.php');
         $client->setRedirectUri(''.env('APP_URL').'/auth/google/callback');
 // offline access will give you both an access and refresh token so that
@@ -61,12 +65,14 @@ class HomeController extends Controller
         $client = new Google_Client();
         $file = Storage::path('public/client_secret.json');
         $client->setAuthConfig($file);
+        $client->addScope('email' );
+        $client->addScope('profile' );
         $client->fetchAccessTokenWithAuthCode($_GET['code']);
-        $access_token = $client->getAccessToken();
-//        dd($access_token);
-        $drive = new Oauth2($client);
+        $service = new Google_Service_Oauth2($client);
+        $user = $service->userinfo->get();
 
-        dd($drive);
+        $save
+
 
     }
 
